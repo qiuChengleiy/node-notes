@@ -26,22 +26,22 @@ const server = http.createServer((req,res) => {
 	console.log(url_,req.method);
 	//header
 	const headers = req.headers;
-	//res.end(JSON.stringify(urlobj));
+	res.end(JSON.stringify(urlobj));
 
-//头部
+头部
 
-// 	// 增
-// res.setHeader('Content-Type', 'text/plain');
+	// 增
+res.setHeader('Content-Type', 'text/plain');
 
-// // 删
-// res.removeHeader('Content-Type');
+// 删
+res.removeHeader('Content-Type');
 
-// // 改
-// res.setHeader('Content-Type', 'text/plain');
-// res.setHeader('Content-Type', 'text/html');  // 覆盖
+// 改
+res.setHeader('Content-Type', 'text/plain');
+res.setHeader('Content-Type', 'text/html');  // 覆盖
 
-// // 查
-// res.getHeader('content-type');
+// 查
+res.getHeader('content-type');
 
 res.writeHead(200, {
         'Content-Type': 'text/plain; charset=utf-8',
@@ -88,47 +88,38 @@ res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
 
 
-
-
-
-
-
-
-
-
-
 //client
 
-// const client = http.get('http://127.0.0.1:8003/home',(res) => {
-// 	//console.log(res);
-// 	res.pipe(process.stdout);
-// 	console.log(res.statusCode)
-// 	//返回给后台
-// })
+const client = http.get('http://127.0.0.1:8003/home',(res) => {
+	//console.log(res);
+	res.pipe(process.stdout);
+	console.log(res.statusCode)
+	//返回给后台
+})
 
-// var net = require('net');
+var net = require('net');
 
-// var PORT = 8989;
-// var HOST = '127.0.0.1';
+var PORT = 8989;
+var HOST = '127.0.0.1';
 
-// var servers = net.createServer(function(socket){
-//     console.log('Connected: ' + socket.remoteAddress + ':' + socket.remotePort);
+var servers = net.createServer(function(socket){
+    console.log('Connected: ' + socket.remoteAddress + ':' + socket.remotePort);
     
-//     socket.on('data', function(data){
-//         console.log('DATA ' + socket.remoteAddress + ': ' + data);
-//         console.log('Data is: ' + data);
+    socket.on('data', function(data){
+        console.log('DATA ' + socket.remoteAddress + ': ' + data);
+        console.log('Data is: ' + data);
 
-//         socket.write('Data from you is  "' + data + '"');
-//     });
+        socket.write('Data from you is  "' + data + '"');
+    });
 
-//     socket.on('close', function(){
-//          console.log('CLOSED: ' +
-//             socket.remoteAddress + ' ' + socket.remotePort);
-//     });
-// });
-// servers.listen(PORT, HOST);
+    socket.on('close', function(){
+         console.log('CLOSED: ' +
+            socket.remoteAddress + ' ' + socket.remotePort);
+    });
+});
+servers.listen(PORT, HOST);
 
-// console.log(servers instanceof net.Server);  // true
+console.log(servers instanceof net.Server);  // true
 
 
 

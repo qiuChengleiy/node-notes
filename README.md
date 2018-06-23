@@ -3,6 +3,10 @@ node 学习笔记   参考:https://github.com/chyingp/nodejs-learning-guide
 
 ### 目录
 
+* 1.node学习
+* 2.[express框架学习](./doc/express.js)
+* 3.[数据库操作封装](./doc/db.js)
+
 * 解压与压缩
 
 ```js
