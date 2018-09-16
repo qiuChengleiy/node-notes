@@ -1,433 +1,87 @@
-# node-notes
-node 学习笔记   参考:https://github.com/chyingp/nodejs-learning-guide
+## NodeJs 进阶学习
 
-### 目录
+---
 
-* 1.node学习
-* 2.[express框架学习](./doc/express.js)
-* 3.[数据库操作封装](./doc/db.js)
+### Node特性(解决web服务器高性能瓶颈问题)
 
-* 解压与压缩
+* 1.单线程
 
-```js
+相对其他服务器开发语言来说，像java、php，用户每一次请求都会为用户创建单独的线程，会增大服务器的开销，可能会造成内存严重不足，需要使用多台
+服务器。 而node则是单线程，不会独立创建单独的线程，从而减少服务器硬件上的开销。node通过内部事件，当用户连接时就会触发，通过非阻塞I/O、事件驱动机制，让node宏观上来看也是"并发执行"的,一个8G的内存服务器可处理同时4万的连接，同时它也能解决服务器线程开销的时间。
 
+缺点： 因为是单线程，当某个用户线程崩溃，那么导致了其他用户也会崩溃
 
-// 1. 资源压缩
+* 解决: pm2(出现崩溃服务会照常运行不会造成整个服务停止)   pm2 start app.js  pm2 list  pm2 log app 
 
-const fs = require('fs');
-const zlib = require('zlib');
+* 2.非阻塞I/O
 
+传统服务器开发，进行I/O操作，比如数据库读写，往往会等到查询的结果，代码才会继续往下执行，这就造成了堵塞，而node则是放到回调函数中，等待返回结果
+在执行回调函数，不会造成堵塞，它会对CPU的利用率更高。--------有了非阻塞并不能解决问题，还需借助事件循环机制
 
-const gzip = zlib.createGzip();
+* 3. 事件驱动
 
-const in_ = fs.createReadStream('./test.jpg');
-const out = fs.createWriteStream('./test.zip');
-
-in_.pipe(gzip).pipe(out);
+在比如客户端建立连接、发送请求、提交数据时，都会触发相对应的事件，而在某一个时刻，只能处理一个事件的回调函数，而在处理某一个事件的回调函数时，又可以转化为其他事件，然后返回执行原有事件的回调函数，从而产生了事件循环。Node底层是用c++写的，V8也是基于c++,c++,在底层代码中，多数都是用事件队列、回调函数队列的构建。用事件队列来完成服务器的任务调度。队列也有优先级。
 
 
-// 中间件使用
-var ARCHIVER = require('archiver');
-var FS = require('fs');
+### Node适合干什么
 
-var presentDate = new Date();
-var myDate = presentDate.toLocaleDateString();//获取当前日期，eg:2017-02-08，以此日期为压缩包文件名
-var path1 = './test.jpg';//图片的绝对路径
-var path2 = './第一张图片.jpg';
-var files = [path1,path2];//将图片路径组合成数组形式，用for循环遍历
-//压缩后文件输出地址：/ARCHIVER/appData/files/，压缩包名：eg：2017-02-08.zip
-var output = FS.createWriteStream('my1.zip');
-//archiver可压缩为zip或tar格式，这里选择zip格式，注意这里新定义了一个变量archive，而不是原有的archiver包引用
-var archive = ARCHIVER('zip', {
-    store: true
-});
-//将压缩路径、包名与压缩格式连接
-archive.pipe(output);
-//nameInZIP指压缩包内的文件名
-var nameInZIP = ['1.jpg','2.jpg'];
-for (var i = 0; i < files.length; i++) {
-    console.log(files[i]);
-    //FS读取文件流并命名，将读取的文件流append到压缩包中
-    archive.append(FS.createReadStream(files[i]), {'name': nameInZIP[i]});
-}
-//压缩结束
-archive.finalize();
+因为基于node的特性，善于I/O，不善于计算，如果业务中有大批量的计算服务，实际上也相当于阻塞了这个线程，node不适合做这样的开发。
+当应用程序处理大批量并发的I/O时，而在响应之前不需要大批量的计算，内部处理时，nodejs非常适合。nodejs也非常适合长连接的项目开发，非常适合
+与websocket结合，开发实时交互的应用程序。比如：用户表单收集、考试系统、聊天室、图文直播、提供JSON API服务
+
+* Node 可以挑战PHP、Java、?等传统服务器开发语言吗
+
+答案是无法比拟的，因为很多企业追求的是可靠的服务，node是一种工具，它在处理某一块时是非常有用的。然而很多企业也都在用node处理某一块业务功能
 
 
-// 有问题 能压缩 不能解压 加压是空的
-//2. 解压
+### Node安装
 
-// const gunzip = zlib.createGunzip();
+推荐使用nvm（包括线上的生产环境搭建）
 
-// const in_zip = fs.createReadStream('./my1.zip');
-// const out_ = fs.createWriteStream(__dirname );
+```sh
 
-// in_zip.pipe(gunzip).pipe(out_);
-
-//中间件使用
-var AdmZip = require('adm-zip');
-var zip = new AdmZip('./my1.zip'); 
-zip.extractAllTo( "./test/");
-
-
-
-// http 服务端压缩
-
-const http = require('http');
-
-const zlib = require('zlib');
-
-const fs = require('fs');
-
-const filePath = './html/index.html';
-const h = 'hello';
-
-
-const server = http.createServer((req,res) => {
-	const acceptEncoding = req.headers['accept-encoding'];
-
-	var gzip ;
-
-	if(acceptEncoding.indexOf('gzip') != '-1') {
-		gzip = zlib.createGzip();
-
-		res.writeHead(200,{
-			'Content-Encoding': 'zip'
-		});
-
-
-        res.end(zlib.gzipSync(h) );
-
-	   //const data = fs.createReadStream(filePath).pipe(gzip).pipe(res);
-	}else {
-		//fs.createReadStream(filePath).pipe(res);
-		 res.end(h);
-	}
-}).listen(8080);
+nvm install v8.10.0 安装 node
+nvm use v8.10.0 nvm 指定使用的 node 的版本
+nvm alias default v8.10.0 设置 node 默认使用版本
+npm config set registry https://registry.npm.taobao.org 设置淘宝镜像
+增加系统文件监控数目 echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
 
 ```
 
-* http模块
+---
 
-```js
+* [之前写的笔记---参考](./base/README.md)
 
-// dns 解析
+### Node模块进阶API学习
 
-const dns = require('dns');
-dns.lookup('www.baidu.com',function(err,address,family) {
-	if(err) throw err;
-	console.log(address);
-})
+* [hello world-编写一定Node web服务](./moduleDemo/day1/hello.js)
+---
+* [http](./moduleDemo/day1/http.js)
 
-dns.resolve4('localhost',(err,address) => {
-	console.log(JSON.stringify(address))
-})
+* [fs](./moduleDemo/day1/fs.js)
 
+* [module -- npm -- package](http://node.org)
 
-//http
+* get相对来说简单些，通过url来获取
 
-const http = require('http')
-const url = require('url')
-const querystring = require('querystring');
+* [post](./moduleDemo/day2/post.js)
 
-const server = http.createServer((req,res) => {
-	const url_ = req.url;
-	const urlp = url.parse(url_);
-	const query = urlp.query
-	const urlobj = querystring.parse(query);
+* [form 中间件- 表单域-文件上传改名](./moduleDemo/day2/form.js)
 
-	console.log(url_,req.method);
-	//header
-	const headers = req.headers;
-	res.end(JSON.stringify(urlobj));
+---
+//未完待续  ^
 
-头部
+### 框架进阶学习
 
-	// 增
-res.setHeader('Content-Type', 'text/plain');
 
-// 删
-res.removeHeader('Content-Type');
 
-// 改
-res.setHeader('Content-Type', 'text/plain');
-res.setHeader('Content-Type', 'text/html');  // 覆盖
 
-// 查
-res.getHeader('content-type');
 
-res.writeHead(200, {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff'
-    });
 
-res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
 
-  if(req.url == '/home' && req.method == 'POST'){   //这里要大写
-  	
-  	req.on('aborted',function() {
-  		console.log('发起请求')
-  	})
 
-  	req.on('close',function() {
-  		console.log('请求关闭')
-  	})
 
-
-
-	var body = '';
-
-	req.on('data',(chunk) => {
-		body+=chunk;
-	})
-
-	req.on('end',() => {
-		
-		//res.end(body_);
-		//console.log(querystring.parse(body))
-		const posts = querystring.parse(body)
-		const obj = JSON.parse(JSON.stringify(posts));
-		console.log(obj);
-		res.write(obj);
-		//res.send();
-		res.end('ok');
-	})
-	
-  }
-  //res.end('ok')
-
-}).listen(3000);
-
-
-
-//client
-
-const client = http.get('http://127.0.0.1:8003/home',(res) => {
-	//console.log(res);
-	res.pipe(process.stdout);
-	console.log(res.statusCode)
-	//返回给后台
-})
-
-var net = require('net');
-
-var PORT = 8989;
-var HOST = '127.0.0.1';
-
-var servers = net.createServer(function(socket){
-    console.log('Connected: ' + socket.remoteAddress + ':' + socket.remotePort);
-    
-    socket.on('data', function(data){
-        console.log('DATA ' + socket.remoteAddress + ': ' + data);
-        console.log('Data is: ' + data);
-
-        socket.write('Data from you is  "' + data + '"');
-    });
-
-    socket.on('close', function(){
-         console.log('CLOSED: ' +
-            socket.remoteAddress + ' ' + socket.remotePort);
-    });
-});
-servers.listen(PORT, HOST);
-
-console.log(servers instanceof net.Server);  // true
-
-```
-
-* fs文件系统
-
-```js
-const fs = require('fs');
-
-fs.readFile('./index.html','utf-8',function(data,err) {
-	err? console.log(err) : console.log(data);
-})
-
-
-//通过流来读取
-
-const stream = fs.createReadStream('./index.html','utf-8');
-
-stream.on('data',(chunk) => {
-	console.log(chunk);
-})
-
-stream.on('err',(err) => {
-	console.log(err.message)
-}).on('end',() => {
-	console.log('没有数据了')
-}).on('close',() => {
-	console.log('关闭')
-}) 
-
-// 这里写入 会将整个文件重写
-fs.writeFile('./index.html','<h2>写入</h2>','utf-8',(err) => {
-	if(err) {
-		throw err;
-	}else {
-		fs.readFile('./index.html','utf-8',(data,err) => {
-			console.log(data);
-		})
-	}
-})
-
-
-const writeStream = fs.createWriteStream('./test.html','utf-8');
-
-writeStream.on('close',() => {
-	console.log('....close')
-})
-
-// 追加进去的 但是还是把源文件全部改掉了
-writeStream.write('<h2>test</h2>');
-writeStream.write('<h4>h4 ...</h4>');
-writeStream.write('<h4>h4 hahah</h4>');
-writeStream.on('end',() => {
-	console.log('....')
-})
-
-
-//判断文件是否存在
-fs.access('./index.html',(err) => {
-	if(err) {
-		throw err;
-	}
-
-	console.log('文件存在')
-})
-
-//创建目录
-fs.mkdir('./mkdir',(err) => {
-	if(err) {
-		console.log(err.message)
-	}
-
-})
-
-//删除文件
-fs.unlink('./第一张图片.jpg',(err) => {
-	//if(err) throw err;
-})
-
-
-//删除目录
-fs.rmdir('./test1',(err) => {
-	console.log(err);
-})
-
-
-//读取目录
-
-const dirs = fs.readdirSync('./doc','utf-8');
-console.log(dirs);
-
-const path = require('path');
-
-const files = path.resolve('./doc','test');
-
-console.log(files); // /Users/qiuchenglei/file-web/git/node-notes/doc/test
-
-var statsm = fs.statSync(files);
-//console.log(statsm);
-
-//遍历目录
-
-const forFile = function(dir) {
-	let results = [ path.resolve(dir) ];
-	const files_ = fs.readdirSync(dir,'utf-8')
-
-	files_.forEach(function(e) {
-		var file = path.resolve(dir,e);
-
-		const stats = fs.statSync(file);
-
-		if(stats.isFile()) {
-			results.push(file);
-			console.log(file);
-		}else if(stats.isDirectory()) {
-			results = results.concat(forFile(file));
-			console.log(file);
-		}
-	})
-
-	return results;
-}
-
-
-
-console.log(forFile('./doc'))
-/*['/Users/qiuchenglei/file-web/git/node-notes/doc',
-  '/Users/qiuchenglei/file-web/git/node-notes/doc/test',
-  '/Users/qiuchenglei/file-web/git/node-notes/doc/test/test.jpg',
-  '/Users/qiuchenglei/file-web/git/node-notes/doc/test.html' ]
-*/
-
-
-
-
-
-// 文件重命名 可以是目录也可以是文件
-
-fs.rename('./my1.zip','test.zip',(err) => {
-	console.log('yes')
-})
-
-
-//监听文件修改
-
-const options = {
-	persistent: true,
-	interval: 2000
-}
-
-fs.watchFile('./test.html',options,(curr,prev) => {
-	console.log('time' + curr.mtime)
-	console.log(prev);
-})
-
-
-```
-
-* 进程
-
-```js
-
-const exec = require('child_process').exec;
-
-// 成功的例子
-exec('ls -al', function(error, stdout, stderr){
-    if(error) {
-        console.error('error: ' + error);
-        return;
-    }
-    console.log('stdout: ' + stdout);
-    console.log('stderr: ' + typeof stderr);
-});
-
-
-// 失败的例子
-exec('ls hello.txt', function(error, stdout, stderr){
-    if(error) {
-        console.error('error: ' + error);
-        return;
-    }
-    console.log('stdout: ' + stdout);
-    console.log('stderr: ' + stderr);
-});
-
-
-var child_process = require('child_process');
-
-child_process.execFile('node', ['http.js'], function(error, stdout, stderr){
-    if(error){
-        throw error;
-    }
-    console.log(stdout);
-});
-
-```
 
 
 
