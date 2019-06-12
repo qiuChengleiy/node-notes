@@ -78,6 +78,10 @@ npm config set registry https://registry.npm.taobao.org 设置淘宝镜像
 
 * [重拾http](./core/http.js)
 
+* [压缩与解压](./core/zip.js)
+
+* [进程管理](./core/process.js)
+
 ---
 //未完待续  ^
 
