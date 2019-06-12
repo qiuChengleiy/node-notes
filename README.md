@@ -68,10 +68,21 @@ npm config set registry https://registry.npm.taobao.org 设置淘宝镜像
 
 * [form 中间件- 表单域-文件上传改名](./moduleDemo/day2/form.js)
 
+* [重拾fs](./core/fs.js)
+
+* [buffer](./core/buffer.js)
+
+* [stream](./core/stream.js)
+
+* [path](./core/path.js)
+
+* [重拾http](./core/http.js)
+
 ---
 //未完待续  ^
 
 ### 框架进阶学习
+
 
 
 
